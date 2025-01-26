@@ -12,10 +12,12 @@ dotenv.config()
 
 mongoose.connect(process.env.DATABASE_ACCESS)
 
+const PORT = process.env.PORT || 4000;
+
 app.use(express.json())
 app.use(cors())
 app.use('/api/user', userUrls)
 app.use('/api/hat-theme', hatThemeUrls)
 app.use('/api/drawn-words', drawnWordsUrls)
-app.listen(4000, () =>console.log("server is listening on port 4000"))
+app.listen(PORT, () =>console.log(`Server running on port ${PORT}`))
 
