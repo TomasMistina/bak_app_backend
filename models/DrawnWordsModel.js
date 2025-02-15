@@ -1,4 +1,7 @@
 const mongoose = require('mongoose');
+const User = require('./UserModel');
+const HatTheme = require('./HatThemeModel');
+const LessonHatTheme = require('./LessonHatThemeModel');
 
 const drawItemSchema = new mongoose.Schema({
     id: {
@@ -9,26 +12,37 @@ const drawItemSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    isDone: {
-      type: Boolean,
-      required: true
-    },
   });
 
 const drawnItems = new mongoose.Schema({
-    ownerName: {
-        type: String,
-        required: true
-      },
-    originHatTitle: {
-        type: String,
-        required: true
-      },
+    owner: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true 
+    },
+    originHatTheme:{
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "HatTheme",
+      required: true,
+    },
+    lessonHatTheme: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "LessonHatTheme",
+      default: null
+    },
     items: [drawItemSchema],
     date:{
-        type: Date,
-        default:Date.now
-      }
+      type: Date,
+      default:Date.now
+    },
+    isFromLesson:{
+      type: Boolean,
+      default: false
+    },
+    isDeleted:{
+      type: Boolean,
+      default: false,
+    },
   });
 
 

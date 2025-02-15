@@ -18,7 +18,13 @@ const signUpTemplate = new mongoose.Schema({
     date:{
         type: Date,
         default:Date.now
+    },
+    isDeleted:{
+        type: Boolean,
+        default: false,
     }
-})
+});
 
-module.exports = mongoose.model('SignUp', signUpTemplate)
+const User = mongoose.model('User', signUpTemplate);
+
+module.exports = User;

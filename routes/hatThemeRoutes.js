@@ -1,13 +1,15 @@
 const express = require('express')
 const router = express.Router()
 const hatThemeCopy = require('../models/HatThemeModel')
+const User = require('../models/UserModel')
 
 
 router.post('/save', async (req, res) =>{
   const { ownerName, title, hats } = req.body;
+  const owner = await User.findOne({ username: ownerName });
   try {
       const newHatTheme = new hatThemeCopy({
-          ownerName,
+          owner: owner._id,
           title,
           hats
       });
@@ -22,10 +24,11 @@ router.post('/save', async (req, res) =>{
 router.put('/update/:id', async (req, res) =>{
     const id = req.params.id;
     const { ownerName, title, hats } = req.body;
+    const owner = await User.findOne({ username: ownerName });
     try {
         const newHatTheme = await hatThemeCopy.findByIdAndUpdate(
             { _id: id}, 
-            { ownerName, title, hats},
+            { owner: owner._id, title, hats},
             { new: true }
         );
         if (!newHatTheme) {
@@ -45,9 +48,15 @@ router.get('/browse', async (req, res) => {
       const skipCount = (page - 1) * limit;
       const currentUser = req.query.username;
 
-      const excludeCurrentUser = { ownerName: { $ne: currentUser } };
+      const user = await User.findOne({ username: currentUser });
 
-      const hatThemes = await hatThemeCopy.find(excludeCurrentUser, { _id: 1, title: 1, ownerName: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const excludeCurrentUser = { owner: { $ne: user._id } };
+
+      const hatThemes = await hatThemeCopy.find(excludeCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
       
       const totalItems = await hatThemeCopy.countDocuments(excludeCurrentUser);
       const totalPages = Math.ceil(totalItems / limit);
@@ -75,9 +84,15 @@ router.get('/my-hats', async (req, res) => {
       const skipCount = (page - 1) * limit;
       const currentUser = req.query.username;
 
-      const onlyCurrentUser = { ownerName: currentUser };
+      const user = await User.findOne({ username: currentUser });
 
-      const hatThemes = await hatThemeCopy.find(onlyCurrentUser, { _id: 1, title: 1, ownerName: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const onlyCurrentUser = { owner: user._id };
+
+      const hatThemes = await hatThemeCopy.find(onlyCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
       
       const totalItems = await hatThemeCopy.countDocuments(onlyCurrentUser);
       const totalPages = Math.ceil(totalItems / limit);
@@ -101,7 +116,7 @@ router.get('/my-hats', async (req, res) => {
 router.get('/get-hat/:id', async (req, res) =>{
   try {
     const id = req.params.id;
-    const hatThemes = await hatThemeCopy.findOne({ _id: id});
+    const hatThemes = await hatThemeCopy.findOne({ _id: id}).populate('owner', 'username');
     res.json(hatThemes);
   }catch (error) {
     console.error('Error retrieving hat theme:', error);

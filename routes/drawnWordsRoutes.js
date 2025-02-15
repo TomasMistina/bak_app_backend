@@ -53,10 +53,10 @@ router.get('/my-drawn-list', async (req, res) => {
 router.get('/get-list/:id', async (req, res) =>{
     try {
       const id = req.params.id;
-      const hatThemes = await drawnWordsCopy.findOne({ _id: id});
-      res.json(hatThemes);
+      const drawnWords = await drawnWordsCopy.findOne({ _id: id});
+      res.json(drawnWords);
     }catch (error) {
-      console.error('Error retrieving hat theme:', error);
+      console.error('Error retrieving drawn words:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

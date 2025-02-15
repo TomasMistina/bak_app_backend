@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const User = require('./UserModel');
 
 const itemSchema = new mongoose.Schema({
   id: {
@@ -16,18 +17,36 @@ const hatSchema = new mongoose.Schema({
 });
 
 const hatThemeSchema = new mongoose.Schema({
-  ownerName: {
-    type: String,
-    required: true
+  owner: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
   },
   title: {
     type: String,
     required: true
   },
   hats: [hatSchema],
-  date:{
+  date: {
     type: Date,
-    default:Date.now
+    default: Date.now
+  },
+  isPublic: { 
+    type: Boolean, 
+    default: true 
+  },
+  isDeleted: { 
+    type: Boolean, 
+    default: false 
+  },
+  wasCopied: { 
+    type: Boolean, 
+    default: false 
+  },
+  copiedFrom: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "HatTheme", 
+    default: null 
   }
 });
 

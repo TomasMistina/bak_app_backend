@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const signUpTemplateCopy = require('../models/SignUpModels')
+const signUpTemplateCopy = require('../models/UserModel')
 const bcrypt = require('bcrypt')
 const {body, validationResult}  = require('express-validator')
 
