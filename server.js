@@ -5,6 +5,9 @@ const dotenv = require('dotenv')
 const userUrls = require('./routes/userRoutes')
 const hatThemeUrls = require('./routes/hatThemeRoutes')
 const drawnWordsUrls = require('./routes/drawnWordsRoutes')
+const groupUrls = require('./routes/groupRoutes')
+const lessonUrls = require('./routes/lessonRoutes')
+const lessonHatThemeUrls = require('./routes/lessonHatThemeRoutes')
 const cors = require('cors')
 
 
@@ -24,5 +27,8 @@ app.use(cors())
 app.use('/api/user', userUrls)
 app.use('/api/hat-theme', hatThemeUrls)
 app.use('/api/drawn-words', drawnWordsUrls)
+app.use('/api/group', groupUrls)
+app.use('/api/lesson', lessonUrls)
+app.use('/api/lesson-hat-theme', lessonHatThemeUrls)
 app.listen(PORT, () =>console.log(`Server running on port ${PORT}`))
 
