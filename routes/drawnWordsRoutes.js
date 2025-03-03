@@ -1,6 +1,7 @@
-const express = require('express')
-const router = express.Router()
-const drawnWordsCopy = require('../models/DrawnWordsModel')
+const express = require('express');
+const router = express.Router();
+const drawnWordsCopy = require('../models/DrawnWordsModel');
+const {PAGE_LIMIT} = require('../constants');
 
 router.post('/save', async (req, res) =>{
     const { ownerName, originHatTitle, items } = req.body;
@@ -13,19 +14,19 @@ router.post('/save', async (req, res) =>{
         await newDrawnWords.save();
         res.status(200).send("List of words saved successfully");
     } catch (error) {
-        console.error("Error saving hat theme:", error);
-        res.status(500).send("Error saving hat theme");
+        console.error("Error saving drawn words:", error);
+        res.status(500).send("Error saving drawn words");
     }
-})
+});
 
 router.get('/my-drawn-list', async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
-      const limit = 4;
+      const limit = PAGE_LIMIT;
       const skipCount = (page - 1) * limit;
       const currentUser = req.query.username;
       
-      const onlyCurrentUser = { ownerName: currentUser };
+      const onlyCurrentUser = { ownerName: currentUser, isDeleted: false};
       
       const drawnWords = await drawnWordsCopy.find(onlyCurrentUser, { _id: 1, originHatTitle: 1}).sort({ date: -1 }).skip(skipCount).limit(limit);
       
@@ -43,22 +44,51 @@ router.get('/my-drawn-list', async (req, res) => {
         },
       });
     } catch (error) {
-      console.error('Error retrieving hat themes:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  }
-
-);
-
-router.get('/get-list/:id', async (req, res) =>{
-    try {
-      const id = req.params.id;
-      const drawnWords = await drawnWordsCopy.findOne({ _id: id});
-      res.json(drawnWords);
-    }catch (error) {
       console.error('Error retrieving drawn words:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+router.get('/get-list/:id', async (req, res) =>{
+  try {
+    const id = req.params.id;
+    const drawnWords = await drawnWordsCopy.findById(id);
+    if (!drawnWords) {
+      return res.status(404).json({ message: "DrawnWords not found" });
+    }
+
+    if (drawnWords.isDeleted) {
+      return res.status(400).json({ message: "The DrawnWords were deleted"});
+    }
+
+    res.json(drawnWords);
+  }catch (error) {
+    console.error('Error retrieving drawn words:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.patch('/delete/:id', async (req, res) => {
+  try{
+      const drawnWordsId = req.params.id;
+      const drawnWords = await drawnWordsCopy.findById(drawnWordsId);
+      if (!drawnWords) {
+        return res.status(404).json({ message: "DrawnWords not found" });
+      }
+
+      if (drawnWords.isDeleted) {
+        return res.status(400).json({ message: "The DrawnWords were already deleted"});
+      }
+
+      await drawnWordsCopy.findByIdAndUpdate(drawnWordsId, {
+          $set: {isDeleted: true}
+      });
+      
+      res.status(200).json({ message: "DrawnWords deleted successfully"})
+  }catch(error){
+      console.error("Error deleting DrawnWords", error);
+      res.status(500).json({ message: "Server error" });
+  }
+});
   
-module.exports = router
+module.exports = router;

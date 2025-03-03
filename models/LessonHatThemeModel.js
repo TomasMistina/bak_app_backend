@@ -24,9 +24,22 @@ const lessonHatThemeSchema = new mongoose.Schema({
       ref: "HatTheme",
       required: true,
     },
+    fromLesson: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Lesson",
+      required: true,
+    },
     isDeleted:{
       type: Boolean,
       default: false,
+    },
+    createdAt:{
+      type: Date,
+      default: Date.now()
+    },
+    lastChangedAt:{
+        type: Date,
+        default: Date.now()
     }
   });
   

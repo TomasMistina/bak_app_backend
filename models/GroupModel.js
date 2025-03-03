@@ -28,6 +28,14 @@ const groupSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    createdAt:{
+        type: Date,
+        default: Date.now()
+    },
+    lastChangedAt:{
+        type: Date,
+        default: Date.now()
+    }
   });
 
 const Group = mongoose.model('Group', groupSchema);
