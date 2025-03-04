@@ -1,10 +1,12 @@
 const express = require('express');
+const crypto = require("crypto");
 const router = express.Router();
 const Group = require('../models/GroupModel');
 const User = require('../models/UserModel');
 const Lesson = require('../models/LessonModel');
 const {PAGE_LIMIT} = require('../constants');
 
+//TODO: nesmie sa dat pripojit viackrat, a mentor by sa nemal vediet pripojit do svojej skupiny
 router.post('/join', async (req, res) => {
     try {
         const { userId, accessCode } = req.body;
@@ -25,7 +27,7 @@ router.post('/join', async (req, res) => {
             { new: true }
         );
 
-        res.status(200).json({ message: "Successfully joined group", groupId: group._id });
+        res.status(200).json({ message: "Successfully joined group", groupName: group.groupName });
     } catch (error) {
         console.error("Error joining group:", error);
         res.status(500).json({ message: "Server error" });
@@ -35,24 +37,34 @@ router.post('/join', async (req, res) => {
 router.post('/create', async (req, res) => {
     try{
         //const user = req.user.id;
-        const {userId, groupName, accessCode} = req.body;
+        const {userId, groupName} = req.body;
         if (!userId) {
             return res.status(400).json({ message: "User ID is required" });
         }
-        const existingAccessCode= await Group.findOne({ accessCode });
-        if (existingAccessCode){
-            return res.status(409).send("This Access Code already exists");
-        }else{
-            const newGroup = new Group({
-                owner: userId,
-                groupName: groupName,
-                accessCode: accessCode,
-                lessons: [],
-                participants: [],
-            });
-            await newGroup.save();
-            res.status(201).send("Group created sucessfully");
-        }
+        const generateAccessCode = async () => {
+            let accessCode;
+            let isUnique = false;
+
+            while (!isUnique) {
+                accessCode = crypto.randomBytes(5).toString("hex").toUpperCase();
+                const existingGroup = await Group.findOne({ accessCode });
+                if (!existingGroup) {
+                    isUnique = true;
+                }
+            }
+            return accessCode;
+        };
+
+        const accessCode = await generateAccessCode();
+        const newGroup = new Group({
+            owner: userId,
+            groupName: groupName,
+            accessCode: accessCode,
+            lessons: [],
+            participants: [],
+        });
+        const savedGroup = await newGroup.save();
+        res.status(201).json({ message: "Group created sucessfully", data: savedGroup});
 
     }catch (error){
         console.error("Error creating group:", error);

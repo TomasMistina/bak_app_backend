@@ -66,42 +66,6 @@ router.get('/get-lesson/:id', async (req, res) =>{
     }
 });
 
-router.get('/get-group/:id', async (req, res) =>{
-    try{
-        const groupId = req.params.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = PAGE_LIMIT;
-        const skipCount = (page - 1) * limit;
-        const group = await Group.findById(groupId).lean();
-        if (!group) {
-            return res.status(404).json({ message: "Group not found" });
-        }
-
-        if (group.isDeleted) {
-            return res.status(400).json({ message: "The group was deleted"});
-        }
-
-        const lessons = await Lesson.find({ _id: { $in: group.lessons }, isDeleted: false }).sort({ createdAt: -1 }).skip(skipCount).limit(limit);
-        const totalItems = await Lesson.countDocuments({ _id: { $in: group.lessons }, isDeleted: false });
-        const totalPages = Math.ceil(totalItems / limit);
-
-        res.json({
-            group,
-            lessons,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalItems,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1,
-            },
-        })
-    }catch(error){
-        console.error("Error fetching group:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
 router.patch('/delete/:id', async (req, res) => {
     try{
         const lessonId = req.params.id;

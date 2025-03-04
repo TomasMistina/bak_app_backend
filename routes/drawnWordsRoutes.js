@@ -4,11 +4,11 @@ const drawnWordsCopy = require('../models/DrawnWordsModel');
 const {PAGE_LIMIT} = require('../constants');
 
 router.post('/save', async (req, res) =>{
-    const { ownerName, originHatTitle, items } = req.body;
+    const { ownerId, originHatTheme, items } = req.body;
     try {
         const newDrawnWords= new drawnWordsCopy({
-            ownerName,
-            originHatTitle,
+            owner: ownerId,
+            originHatTheme,
             items
         });
         await newDrawnWords.save();
@@ -24,11 +24,11 @@ router.get('/my-drawn-list', async (req, res) => {
       const page = parseInt(req.query.page) || 1;
       const limit = PAGE_LIMIT;
       const skipCount = (page - 1) * limit;
-      const currentUser = req.query.username;
+      const currentUser = req.query.userId;
       
-      const onlyCurrentUser = { ownerName: currentUser, isDeleted: false};
+      const onlyCurrentUser = { owner: currentUser, isDeleted: false};
       
-      const drawnWords = await drawnWordsCopy.find(onlyCurrentUser, { _id: 1, originHatTitle: 1}).sort({ date: -1 }).skip(skipCount).limit(limit);
+      const drawnWords = await drawnWordsCopy.find(onlyCurrentUser, { _id: 1, originHatTheme: 1}).sort({ date: -1 }).skip(skipCount).limit(limit).populate('originHatTheme','title').lean();
       
       const totalItems = await drawnWordsCopy.countDocuments(onlyCurrentUser);
       const totalPages = Math.ceil(totalItems / limit);
@@ -83,7 +83,7 @@ router.patch('/delete/:id', async (req, res) => {
       await drawnWordsCopy.findByIdAndUpdate(drawnWordsId, {
           $set: {isDeleted: true}
       });
-      
+
       res.status(200).json({ message: "DrawnWords deleted successfully"})
   }catch(error){
       console.error("Error deleting DrawnWords", error);
