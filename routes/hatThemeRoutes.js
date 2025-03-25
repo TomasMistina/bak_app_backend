@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const hatThemeCopy = require('../models/HatThemeModel');
 const User = require('../models/UserModel');
+const mongoose = require('mongoose');
 const {PAGE_LIMIT} = require('../constants');
 
 router.post('/save', async (req, res) =>{
@@ -69,7 +70,7 @@ router.put('/update/:id', async (req, res) =>{
 router.post('/copy/:id', async (req, res) =>{
   try {
     const originalHatid = req.params.id;
-    const { ownerId } = req.body;
+    const ownerId = req.body.userId;
 
     if (!ownerId) {
       return res.status(400).json({ message: "Missing ownerId" });
@@ -89,13 +90,14 @@ router.post('/copy/:id', async (req, res) =>{
       return res.status(400).json({ message: "Cannot copy a deleted HatTheme" });
     }
 
+    //TODO opravit sposob ako sa vytvara klobuk a ako sa taha z klobuku(dat prec id z itemov, staci _id)
     const copiedHats = originalHat.hats.map(hat => ({
-      items: hat.items.map(item => ({ ...item._doc }))
+      items: hat.items.map(item => ({ ...item._doc, id: new mongoose.Types.ObjectId() }))
     }));
 
     const newHatTheme = new hatThemeCopy({
         owner: ownerId,
-        title: `${originalHat.title} (Copied)`,
+        title: `${originalHat.title} (Skopírovaný)`,
         hats: copiedHats,
         wasCopied: true,
         copiedFrom: originalHatid
