@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const LessonHatTheme = require('./LessonHatThemeModel');
+const HatTheme = require('./HatThemeModel');
 
 const lessonSchema = new mongoose.Schema({
     owner: { 
@@ -7,14 +7,19 @@ const lessonSchema = new mongoose.Schema({
         ref: "User", 
         required: true 
     },
+    description: {
+        type: String,
+        trim: true,
+    },
     lessonName: {
         type: String,
         required: true,
     },
-    lessonHatThemes: [{ 
+    hatTheme: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "LessonHatTheme" 
-    }],
+        ref: "HatTheme",
+        required: true,
+    },
     isOpen: {
         type: Boolean,
         default: true,

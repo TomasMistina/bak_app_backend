@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('./UserModel');
 const HatTheme = require('./HatThemeModel');
-const LessonHatTheme = require('./LessonHatThemeModel');
+const Lesson = require('./LessonModel');
 
 const drawItemSchema = new mongoose.Schema({
     id: {
@@ -27,7 +27,7 @@ const drawnItems = new mongoose.Schema({
     },
     lessonHatTheme: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "LessonHatTheme",
+      ref: "Lesson",
       default: null
     },
     items: [drawItemSchema],

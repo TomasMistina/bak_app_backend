@@ -2,20 +2,26 @@ const express = require('express');
 const router = express.Router();
 const Lesson = require('../models/LessonModel');
 const Group = require('../models/GroupModel');
-const LessonHatTheme = require('../models/LessonHatThemeModel');
-const {PAGE_LIMIT} = require('../constants');
+const HatTheme = require('../models/HatThemeModel');
+const DrawnItems = require('../models/DrawnWordsModel');
 
 router.post('/create', async (req, res) => {
     try {
-        const { groupId, lessonName, userId} = req.body;
+        const { groupId, lessonName, hatThemeId, userId} = req.body;
         const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ message: "Group not found" });
         }
 
+        const hatTheme = await HatTheme.findById(hatThemeId);
+        if (!hatTheme) {
+            return res.status(404).json({ message: "HatTheme not found" });
+        }
+
         const newLesson = new Lesson({
             lessonName: lessonName,
-            owner: userId
+            owner: userId,
+            hatTheme: hatThemeId,
         });
 
         const savedLesson = await newLesson.save();
@@ -23,7 +29,7 @@ router.post('/create', async (req, res) => {
             $push: { lessons: savedLesson._id }
         });
 
-        res.status(201).json({ message: "Lesson created and added to group", lesson: savedLesson });
+        res.status(201).json({ message: "Lesson created and added to group", data: savedLesson });
     } catch (error) {
         console.error("Error creating lesson:", error);
         res.status(500).json({ message: "Server error" });
@@ -33,9 +39,6 @@ router.post('/create', async (req, res) => {
 router.get('/get-lesson/:id', async (req, res) =>{
     try{
         const lessonId = req.params.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = PAGE_LIMIT;
-        const skipCount = (page - 1) * limit;
         const lesson = await Lesson.findById(lessonId).lean();
         if (!lesson) {
             return res.status(404).json({ message: "Lesson not found" });
@@ -44,20 +47,11 @@ router.get('/get-lesson/:id', async (req, res) =>{
             return res.status(400).json({ message: "The lesson was deleted"});
         }
 
-        const lessonHatThemes = await LessonHatTheme.find({ _id: { $in: lesson.lessonHatThemes || []}, isDeleted: false }).sort({ createdAt: -1 }).skip(skipCount).limit(limit);
-        const totalItems = await LessonHatTheme.countDocuments({ _id: { $in: lesson.lessonHatThemes || []}, isDeleted: false });
-        const totalPages = Math.ceil(totalItems / limit);
+        const lessonHatTheme = await HatTheme.findById(lesson.hatTheme);
 
         res.json({
             lesson,
-            lessonHatThemes,
-            pagination: {
-                currentPage: page,
-                totalPages,
-                totalItems,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1,
-            },
+            lessonHatTheme
         })
 
     }catch (error){
@@ -65,6 +59,53 @@ router.get('/get-lesson/:id', async (req, res) =>{
         res.status(500).json({ message: "Server error" });
     }
 });
+
+router.get('/get-drawn-words/all/:id', async (req, res) =>{
+    try{
+        const lessonId = req.params.id;
+        const lesson = await Lesson.findById(lessonId).lean();
+        if (!lesson) {
+            return res.status(404).json({ message: "Lesson not found" });
+        }
+        if (lesson.isDeleted) {
+            return res.status(400).json({ message: "The lesson was deleted"});
+        }
+
+        const drawnWordsLists = await DrawnItems.find({ lessonHatTheme: lessonId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
+
+        res.json({
+            drawnWordsLists
+        })
+
+    }catch (error){
+        console.error("Error getting drawn words", error);
+        res.status(500).json({ message: "Server error" });
+    }
+})
+
+router.get('/get-drawn-words/mine/:id', async (req, res) =>{
+    try{
+        const lessonId = req.params.id;
+        const userId = req.query.userId;
+        const lesson = await Lesson.findById(lessonId).lean();
+        if (!lesson) {
+            return res.status(404).json({ message: "Lesson not found" });
+        }
+        if (lesson.isDeleted) {
+            return res.status(400).json({ message: "The lesson was deleted"});
+        }
+
+        const drawnWordsLists = await DrawnItems.find({ lessonHatTheme: lessonId, owner: userId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
+        
+        res.json({
+            drawnWordsLists
+        })
+
+    }catch (error){
+        console.error("Error getting drawn words", error);
+        res.status(500).json({ message: "Server error" });
+    }
+})
 
 router.patch('/delete/:id', async (req, res) => {
     try{
@@ -82,12 +123,12 @@ router.patch('/delete/:id', async (req, res) => {
             $set: {isDeleted: true}
         });
 
-        if (lesson.lessonHatThemes && lesson.lessonHatThemes.length > 0) {
-            await LessonHatTheme.updateMany(
-                { _id: { $in: lesson.lessonHatThemes } }, 
-                { $set: { isDeleted: true } }
-            );
-        }
+        // if (lesson.lessonHatThemes && lesson.lessonHatThemes.length > 0) {
+        //     await LessonHatTheme.updateMany(
+        //         { _id: { $in: lesson.lessonHatThemes } }, 
+        //         { $set: { isDeleted: true } }
+        //     );
+        // }
 
         res.status(200).json({ message: "Lesson deleted successfully"})
     }catch(error){
@@ -96,44 +137,11 @@ router.patch('/delete/:id', async (req, res) => {
     }
 });
 
-router.patch('/lock/:id', async (req, res) => {
-    try{
+router.patch('/toggle-lock/:id', async (req, res) => {
+    try {
         const lessonId = req.params.id;
         const lesson = await Lesson.findById(lessonId).lean();
-        if (!lesson) {
-            return res.status(404).json({ message: "Lesson not found" });
-        }
-
-        if (lesson.isDeleted) {
-            return res.status(400).json({ message: "The lesson was deleted"});
-        }
-
-        if (!lesson.isOpen){
-            return res.status(400).json({ message: "The lesson was already closed"});
         
-        }
-        await Lesson.findByIdAndUpdate(lessonId, {
-            $set: {isOpen: false}
-        });
-
-        if (lesson.lessonHatThemes && lesson.lessonHatThemes.length > 0) {
-            await LessonHatTheme.updateMany(
-                { _id: { $in: lesson.lessonHatThemes } }, 
-                { $set: { isOpen: false } }
-            );
-        }
-
-        res.status(200).json({ message: "Lesson closed successfully"})
-    }catch(error){
-        console.error("Error closing lesson", error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-router.patch('/unlock/:id', async (req, res) => {
-    try{
-        const lessonId = req.params.id;
-        const lesson = await Lesson.findById(lessonId).lean();
         if (!lesson) {
             return res.status(404).json({ message: "Lesson not found" });
         }
@@ -142,24 +150,16 @@ router.patch('/unlock/:id', async (req, res) => {
             return res.status(400).json({ message: "The lesson was deleted" });
         }
 
-        if (lesson.isOpen){
-            return res.status(400).json({ message: "The lesson was already open" })
-        }
+        const updatedLesson = await Lesson.findByIdAndUpdate(lessonId, {
+            $set: { isOpen: !lesson.isOpen }
+        }, { new: true });
 
-        await Lesson.findByIdAndUpdate(lessonId, {
-            $set: {isOpen: true}
+        res.status(200).json({ 
+            message: updatedLesson.isOpen ? "Lesson opened successfully" : "Lesson closed successfully"
         });
 
-        if (lesson.lessonHatThemes && lesson.lessonHatThemes.length > 0) {
-            await LessonHatTheme.updateMany(
-                { _id: { $in: lesson.lessonHatThemes } }, 
-                { $set: { isOpen: true } }
-            );
-        }
-
-        res.status(200).json({ message: "Lesson open successfully"})
-    }catch(error){
-        console.error("Error opening lesson", error);
+    } catch (error) {
+        console.error("Error toggling lesson lock", error);
         res.status(500).json({ message: "Server error" });
     }
 });

@@ -4,19 +4,25 @@ const drawnWordsCopy = require('../models/DrawnWordsModel');
 const {PAGE_LIMIT} = require('../constants');
 
 router.post('/save', async (req, res) =>{
-    const { ownerId, originHatTheme, items } = req.body;
-    try {
-        const newDrawnWords= new drawnWordsCopy({
-            owner: ownerId,
-            originHatTheme,
-            items
-        });
-        await newDrawnWords.save();
-        res.status(200).send("List of words saved successfully");
-    } catch (error) {
-        console.error("Error saving drawn words:", error);
-        res.status(500).send("Error saving drawn words");
-    }
+  try {
+      const { ownerId, originHatTheme, items, lessonId } = req.body;
+      let isFromLesson = false;
+      if (lessonId != null){
+        isFromLesson = true;
+      }
+      const newDrawnWords= new drawnWordsCopy({
+          owner: ownerId,
+          originHatTheme,
+          isFromLesson: isFromLesson,
+          lessonHatTheme: lessonId,
+          items,
+      });
+      await newDrawnWords.save();
+      res.status(200).send("List of words saved successfully");
+  } catch (error) {
+      console.error("Error saving drawn words:", error);
+      res.status(500).send("Error saving drawn words");
+  }
 });
 
 router.get('/my-drawn-list', async (req, res) => {

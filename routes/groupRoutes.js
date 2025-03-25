@@ -176,6 +176,27 @@ router.get('/get-group/:id', async (req, res) =>{
     }
 });
 
+router.get('/get-participants/:id', async (req, res) =>{
+    try{
+        const groupId = req.params.id;
+        const group = await Group.findById(groupId).populate('participants','username');
+        if (!group) {
+            return res.status(404).json({ message: "Group not found" });
+        }
+
+        if (group.isDeleted) {
+            return res.status(400).json({ message: "The group was deleted"});
+        }
+
+        res.json({
+            group
+        })
+    }catch(error){
+        console.error("Error fetching group:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 router.patch('/delete/:id', async (req, res) => {
     try{
         const groupId = req.params.id;
@@ -195,10 +216,6 @@ router.patch('/delete/:id', async (req, res) => {
         if (lessonIds.length > 0){
             await Lesson.updateMany(
                 { _id: { $in: lessonIds } }, 
-                { $set: { isDeleted: true } }
-            );
-            await LessonHatTheme.updateMany(
-                { lesson: { $in: lessonIds } },
                 { $set: { isDeleted: true } }
             );
         }
