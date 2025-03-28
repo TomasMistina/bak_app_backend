@@ -25,6 +25,26 @@ router.post('/save', async (req, res) =>{
   }
 });
 
+router.patch('/update/:id', async (req, res) =>{
+  try {
+      const { items } = req.body;
+      const  drawnWordsId = req.params.id;
+
+      const drawnWordsToUpdate = await drawnWordsCopy.findById(drawnWordsId);
+      if (!drawnWordsToUpdate){
+        return res.status(404).json({ message: "Drawn words not found" });
+      }
+
+      const updatedWords = await drawnWordsCopy.findByIdAndUpdate(drawnWordsId, {
+        $set: { items : items , isDeleted : false}}, { new: true });
+
+      res.status(200).send("List of words updated successfully");
+  } catch (error) {
+      console.error("Error saving drawn words:", error);
+      res.status(500).send("Error saving drawn words");
+  }
+});
+
 router.get('/my-drawn-list', async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;

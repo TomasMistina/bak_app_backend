@@ -95,10 +95,10 @@ router.get('/get-drawn-words/mine/:id', async (req, res) =>{
             return res.status(400).json({ message: "The lesson was deleted"});
         }
 
-        const drawnWordsLists = await DrawnItems.find({ lessonHatTheme: lessonId, owner: userId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
+        const drawnWordsList = await DrawnItems.findOne({ lessonHatTheme: lessonId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
         
         res.json({
-            drawnWordsLists
+            drawnWordsList
         })
 
     }catch (error){
