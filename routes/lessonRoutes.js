@@ -4,6 +4,7 @@ const Lesson = require('../models/LessonModel');
 const Group = require('../models/GroupModel');
 const HatTheme = require('../models/HatThemeModel');
 const DrawnItems = require('../models/DrawnWordsModel');
+const User = require('../models/UserModel');
 
 router.post('/create', async (req, res) => {
     try {
@@ -94,8 +95,12 @@ router.get('/get-drawn-words/mine/:id', async (req, res) =>{
         if (lesson.isDeleted) {
             return res.status(400).json({ message: "The lesson was deleted"});
         }
+        const user = await User.findById(userId);
+        if(!user){
+            return res.status(404).json({ message: "User not found"});
+        }
 
-        const drawnWordsList = await DrawnItems.findOne({ lessonHatTheme: lessonId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
+        const drawnWordsList = await DrawnItems.findOne({ owner: userId, lessonHatTheme: lessonId, isDeleted: false}).sort({ createdAt: -1 }).populate('owner','username').lean();
         
         res.json({
             drawnWordsList
@@ -122,13 +127,6 @@ router.patch('/delete/:id', async (req, res) => {
         await Lesson.findByIdAndUpdate(lessonId, {
             $set: {isDeleted: true}
         });
-
-        // if (lesson.lessonHatThemes && lesson.lessonHatThemes.length > 0) {
-        //     await LessonHatTheme.updateMany(
-        //         { _id: { $in: lesson.lessonHatThemes } }, 
-        //         { $set: { isDeleted: true } }
-        //     );
-        // }
 
         res.status(200).json({ message: "Lesson deleted successfully"})
     }catch(error){

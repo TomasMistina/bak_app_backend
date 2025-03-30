@@ -125,11 +125,9 @@ router.get('/browse', async (req, res) => {
 
       const excludeCurrentUser = { owner: { $ne: user._id }, isDeleted: false, isPublic: true };
 
-      const hatThemes = await hatThemeCopy.find(excludeCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
-      
+      const hatThemes = await hatThemeCopy.find(excludeCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit).populate('owner','username');
       const totalItems = await hatThemeCopy.countDocuments(excludeCurrentUser);
       const totalPages = Math.ceil(totalItems / limit);
-
       res.json({
             data: hatThemes,
             pagination: {
@@ -160,6 +158,42 @@ router.get('/my-hats', async (req, res) => {
       }
 
       const onlyCurrentUser = { owner: user._id, isDeleted: false};
+
+      const hatThemes = await hatThemeCopy.find(onlyCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
+      
+      const totalItems = await hatThemeCopy.countDocuments(onlyCurrentUser);
+      const totalPages = Math.ceil(totalItems / limit);
+
+      res.json({
+            data: hatThemes,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalItems,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
+        });
+    } catch (error) {
+      console.error('Error retrieving hat themes:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  router.get('/select-from-my-hats', async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = PAGE_LIMIT;
+      const skipCount = (page - 1) * limit;
+      const currentUser = req.query.username;
+
+      const user = await User.findOne({ username: currentUser });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const onlyCurrentUser = { owner: user._id, isDeleted: false, isPublic: true};
 
       const hatThemes = await hatThemeCopy.find(onlyCurrentUser, { _id: 1, title: 1, owner: 1 }).sort({ date: -1 }).skip(skipCount).limit(limit);
       
