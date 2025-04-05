@@ -22,6 +22,14 @@ const signUpTemplate = new mongoose.Schema({
     isDeleted:{
         type: Boolean,
         default: false,
+    },
+    resetCode:{
+        type: String,
+        default: null,
+    },
+    resetCodeExpires:{
+        type: Date,
+        default: null,
     }
 });
 
