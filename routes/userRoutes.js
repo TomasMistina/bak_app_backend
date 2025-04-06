@@ -202,5 +202,17 @@ router.post("/reset-password", async (req, res) => {
     res.status(200).json({ message: "Password has been reset" });
   });
 
+router.get('/get-email', async (req, res) => {
+    const user = await User.findById(req.query.userId);
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.isDeleted){
+        return res.status(404).json({ message: 'User was deleted' });
+    }
+  
+    res.json({ email: user.email });
+  });
+
 module.exports = router;
 
