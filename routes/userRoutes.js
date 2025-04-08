@@ -93,6 +93,34 @@ router.patch('/change-password', [body('oldPassword').isString().notEmpty(), bod
     res.status(200).json({message: "Password successfully changed"})
 })
 
+router.patch('/change-username', [body('newUsername').isString().notEmpty(), body('password').isString().notEmpty()], async (req, res) =>{
+    const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+    const {userId, newUsername, password}= req.body;
+    const user = await User.findById(userId);
+    if(!user){
+        return res.status(404).json({ message: "User not found" });
+    }
+    if (user.isDeleted) {
+        return res.status(400).json({ message: "The user was deleted"});
+    }
+    const usernameInUse = await User.findOne({ username: newUsername });
+    if(usernameInUse){
+        return res.status(409).json({ message: "This username is already in use"});
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid){ 
+        return res.status(401).json({ message: "Password was not valid" });
+    }
+    await User.findByIdAndUpdate(userId, {
+        $set: {username: newUsername},
+    });
+    res.status(200).json({message: "Username successfully changed"})
+})
+
 router.patch('/change-email', [body('newEmail').isEmail(), body('password').isString().notEmpty()], async (req, res) =>{
     const errors = validationResult(req);
         if (!errors.isEmpty()) {
