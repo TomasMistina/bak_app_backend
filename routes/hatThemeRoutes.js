@@ -262,58 +262,38 @@ router.patch('/delete/:id', async (req, res) => {
   }
 });
 
-router.patch('/make-private/:id', async (req, res) => {
-  try{
-      const hatThemeId = req.params.id;
-      const hatTheme = await hatThemeCopy.findById(hatThemeId);
-      if (!hatTheme) {
-          return res.status(404).json({ message: "Hat theme not found" });
-      }
+router.patch('/toggle-visibility/:id', async (req, res) => {
+  try {
+    const hatThemeId = req.params.id;
+    const { makePublic } = req.body;
 
-      if (hatTheme.isDeleted) {
-          return res.status(400).json({ message: "Hat theme was deleted"});
-      }
+    const hatTheme = await hatThemeCopy.findById(hatThemeId);
+    if (!hatTheme) {
+      return res.status(404).json({ message: "Hat theme not found" });
+    }
 
-      if (!hatTheme.isPublic){
-          return res.status(400).json({ message: "Hat theme was already private"});
-      
-      }
-      await hatThemeCopy.findByIdAndUpdate(hatThemeId, {
-          $set: {isPublic: false}
+    if (hatTheme.isDeleted) {
+      return res.status(400).json({ message: "Hat theme was deleted" });
+    }
+
+    if (hatTheme.isPublic === makePublic) {
+      return res.status(400).json({     
+        message: `Hat theme is already ${makePublic ? 'public' : 'private'}` 
       });
+    }
 
-      res.status(200).json({ message: "Hat theme made private successfully"})
-  }catch(error){
-      console.error("Error while making Hat theme private", error);
-      res.status(500).json({ message: "Server error" });
+    await hatThemeCopy.findByIdAndUpdate(hatThemeId, {
+      $set: { isPublic: makePublic },
+    });
+
+    res.status(200).json({ 
+      message: `Hat theme made ${makePublic ? 'public' : 'private'} successfully` 
+    });
+  } catch (error) {
+    console.error("Error while toggling Hat theme visibility", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-router.patch('/make-public/:id', async (req, res) => {
-  try{
-      const hatThemeId = req.params.id;
-      const hatTheme = await hatThemeCopy.findById(hatThemeId);
-      if (!hatTheme) {
-          return res.status(404).json({ message: "Hat theme not found" });
-      }
-
-      if (hatTheme.isDeleted) {
-          return res.status(400).json({ message: "Hat theme was deleted" });
-      }
-
-      if (hatTheme.isPublic){
-          return res.status(400).json({ message: "Hat theme was already public" })
-      }
-
-      await hatThemeCopy.findByIdAndUpdate(hatThemeId, {
-          $set: {isPublic: true}
-      });
-
-      res.status(200).json({ message: "Hat theme made public successfully"})
-  }catch(error){
-      console.error("Error while making Hat theme public", error);
-      res.status(500).json({ message: "Server error" });
-  }
-});
 
 module.exports = router;
