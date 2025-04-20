@@ -59,7 +59,7 @@ router.patch('/delete/:id', async (req, res) =>{
         }
         const deletedUsername = `deleted_${userId}`;
         await User.findByIdAndUpdate(userId, {
-            $set: {isDeleted: true, username: deletedUsername},
+            $set: {isDeleted: true, username: deletedUsername, email: deletedUsername},
         });
         res.status(200).json({ message: "User deleted successfully"})
     }catch(error){

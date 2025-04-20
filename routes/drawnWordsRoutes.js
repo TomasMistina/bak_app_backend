@@ -78,7 +78,7 @@ router.get('/my-drawn-list', async (req, res) => {
 router.get('/get-list/:id', async (req, res) =>{
   try {
     const id = req.params.id;
-    const drawnWords = await drawnWordsCopy.findById(id);
+    const drawnWords = await drawnWordsCopy.findById(id).populate('originHatTheme', 'title').populate('lessonHatTheme', 'lessonName');
     if (!drawnWords) {
       return res.status(404).json({ message: "DrawnWords not found" });
     }
